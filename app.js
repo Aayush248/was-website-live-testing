@@ -54,6 +54,20 @@ app.get('/', (req, res) => {
 });
 
 // POST route for form submission
+// app.post('/submit', upload.single('image'), (req, res) => {
+//     const { first_name, last_name, email, hire_date, job_title, salary } = req.body;
+//     const imageUrl = req.file.location; // URL of the uploaded image in S3
+
+//     const sql = 'INSERT INTO employee (first_name, last_name, email, hire_date, job_title, salary, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
+//     db.query(sql, [first_name, last_name, email, hire_date, job_title, salary, imageUrl], (err, result) => {
+//         if (err) {
+//             throw err;
+//         }
+//         console.log('Employee data inserted');
+//         res.redirect('/');
+//     });
+// });
+
 app.post('/submit', upload.single('image'), (req, res) => {
     const { first_name, last_name, email, hire_date, job_title, salary } = req.body;
     const imageUrl = req.file.location; // URL of the uploaded image in S3
@@ -61,12 +75,14 @@ app.post('/submit', upload.single('image'), (req, res) => {
     const sql = 'INSERT INTO employee (first_name, last_name, email, hire_date, job_title, salary, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
     db.query(sql, [first_name, last_name, email, hire_date, job_title, salary, imageUrl], (err, result) => {
         if (err) {
-            throw err;
+            console.error('Error inserting employee data:', err);
+            return res.status(500).json({ success: false, message: 'Database error' });
         }
         console.log('Employee data inserted');
-        res.redirect('/');
+        res.json({ success: true, message: 'Employee data inserted successfully' });
     });
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
