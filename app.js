@@ -5,19 +5,25 @@ const multerS3 = require('multer-s3');
 const aws = require('aws-sdk');
 const path = require('path');
 const mysql = require('mysql');
+const dotenv = require('dotenv');
+
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
 
-// Initialize S3 without explicitly specifying credentials
+// Initialize S3 with credentials from .env file
 const s3 = new aws.S3({
-    region: 'us-east-1'
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION
 });
 
 // Multer middleware setup for file uploads
 const upload = multer({
     storage: multerS3({
         s3: s3,
-        bucket: 'source-bucket-90',
+        bucket: process.env.S3_BUCKET_NAME,
         acl: 'private', // Make uploaded file private
         metadata: function (req, file, cb) {
             cb(null, { fieldName: file.fieldname });
@@ -28,12 +34,12 @@ const upload = multer({
     })
 });
 
-// Database connection details
+// Database connection details from .env file
 const db = mysql.createConnection({
-    host: 'database-2.crezjbu8x9vl.us-east-1.rds.amazonaws.com',
-    user: 'admin',
-    password: 'admin12345',
-    database: 'employee_info'
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 // Connect to the database
@@ -56,10 +62,9 @@ app.get('/', (req, res) => {
 // POST route for form submission
 app.post('/submit', upload.single('image'), (req, res) => {
     const { first_name, last_name, email, hire_date, job_title, salary } = req.body;
-    const imageUrl = req.file.location; // URL of the uploaded image in S3
 
-    const sql = 'INSERT INTO employee (first_name, last_name, email, hire_date, job_title, salary, image_url) VALUES (?, ?, ?, ?, ?, ?, ?)';
-    db.query(sql, [first_name, last_name, email, hire_date, job_title, salary, imageUrl], (err, result) => {
+    const sql = 'INSERT INTO employee (first_name, last_name, email, hire_date, job_title, salary) VALUES (?, ?, ?, ?, ?, ?)';
+    db.query(sql, [first_name, last_name, email, hire_date, job_title, salary], (err, result) => {
         if (err) {
             throw err;
         }
